@@ -126,7 +126,7 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .item-media-property video{max-height:360px;background:var(--ink)}
 .media-property-definition{padding:16px;background:var(--bg);border-radius:8px;margin:12px 0}
 @media(max-width:600px){.item-media-property{padding:17px}.item-player-preview{grid-template-columns:64px 1fr;gap:14px}.item-player-art{height:64px}.item-player-track>strong{font-size:20px}.item-player-video{grid-template-columns:1fr}}
-</style>
+.file-property{display:grid;gap:10px}.file-attachment{display:flex;gap:12px;align-items:center;border:1px solid var(--line);padding:12px;border-radius:9px;background:#fff}.file-attachment>.icon{width:22px;flex-shrink:0}.file-attachment span{min-width:0}.file-attachment strong{display:block;font-size:12px;overflow-wrap:anywhere;font-weight:500}.file-attachment small,.file-local-note{display:block;font-size:10px;color:var(--muted);line-height:1.6}.file-choose{font-size:11px;cursor:pointer;display:flex;align-items:center;gap:12px;color:var(--green)}.file-choose input{font-size:10px;max-width:240px}.file-property>.text-btn{justify-self:start;font-size:10px}</style>
 </head>
 <body>
 <div class="mobile-shade" id="shade" data-action="menu"></div>
@@ -884,8 +884,8 @@ propertyInput=function(c,p){
  return inputBeforeMediaProperty(c,p);
 };
 function itemMediaPlayer(c,p){
- const source=p.mediaSource||p.key,url=String(c[source]||'').trim();
- const valid=/^https?:\/\//i.test(url);
+ const source=p.mediaSource||p.key,url=localMediaFiles.get(c.uid+'|'+(p.mediaFileSource||'mediaFile'))||String(c[source]||'').trim();
+ const valid=/^(https?:\/\/|blob:)/i.test(url);
  const mode=p.mediaMode==='video'||(p.mediaMode!=='audio'&&(c.type==='Video'||/\.(mp4|webm|ogv)(?:[?#]|$)/i.test(url)))?'video':'audio';
  const progress=Math.max(0,Math.min(100,Number(c.mediaProgress)||0));
  const visual='<div class="item-player-preview '+(mode==='video'?'item-player-video':'')+'"><div class="item-player-art cover-'+c.type+'">'+icon(mode==='video'?'video':typeIconV2(c.type)||'music')+'</div><div class="item-player-track"><strong>'+esc(c.title||'Untitled media')+'</strong><span>'+esc(c.mediaCreator||'Media preview')+'</span><div class="media-progress"><div style="width:'+progress+'%"></div></div><div class="between media-time"><span>'+Math.round((Number(c.mediaDuration)||0)*progress/100)+' min</span><span>'+mediaDurationText(c)+'</span></div><div class="media-controls"><button type="button" class="media-play" data-item-media-preview aria-label="Preview '+esc(p.name)+'">'+icon('play')+'</button>'+(['PodcastEpisode','Audiobook'].includes(c.type)?'<select class="media-speed" aria-label="Preview playback speed"><option>1×</option><option>1.25×</option><option>1.5×</option><option>2×</option></select>':'')+'<span class="small muted">Player preview</span></div></div></div>';
@@ -918,6 +918,100 @@ document.addEventListener('click',e=>{
  toast('Player preview · add a direct media URL to play a file.');
 });
 saveSchemas();
+
+
+// Refine media schemas and add a reusable File property (local preview only).
+if(!propertyKinds.some(p=>p[0]==='file'))propertyKinds.push(['file','File']);
+const localMediaFiles=new Map();
+const mediaTypeFields={
+ Track:{creator:'Artist',collection:'Album',genre:['Electronic','Ambient','Indie','Instrumental','Jazz'],extra:[]},
+ PodcastEpisode:{creator:'Podcast',collection:'Episode',genre:['Ideas','Culture','Creativity','Wellbeing','Technology'],extra:[{key:'podcastHost',name:'Host',kind:'text'},{key:'episodeNumber',name:'Episode number',kind:'number'}]},
+ Audiobook:{creator:'Author',collection:'Current chapter',genre:['Personal development','Essays','Mindfulness','Design','Memoir'],extra:[{key:'bookNarrator',name:'Narrator',kind:'text'}]},
+ Video:{creator:'Creator / director',collection:'Series',genre:['Short film','Documentary','Live performance','Tutorial','Art'],extra:[{key:'videoResolution',name:'Resolution',kind:'select',options:['720p','1080p','4K']}]}
+};
+if(!localStorage.getItem('notomu-media-refinement-v1')){
+ mediaKinds.forEach(type=>{
+  itemSchemas[type]=definitions(type).filter(p=>!['status','priority'].includes(p.key));
+  const defs=definitions(type),config=mediaTypeFields[type];
+  const creator=defs.find(p=>p.key==='mediaCreator');if(creator)creator.name=config.creator;
+  const collection=defs.find(p=>p.key==='mediaCollection');if(collection)collection.name=config.collection;
+  const url=defs.find(p=>p.key==='mediaUrl');if(url)url.name='URL';
+  [{key:'mediaFile',name:'File',kind:'file'},{key:'mediaGenre',name:'Genre',kind:'multi_select',options:config.genre},{key:'mediaReleased',name:type==='PodcastEpisode'?'Published date':'Release date',kind:'date'},...config.extra].forEach(p=>{if(!defs.some(d=>d.key===p.key))defs.push(p)});
+  const player=defs.find(p=>p.kind==='media_player');if(player)player.mediaFileSource='mediaFile';
+  const order=['type','title','mediaPlayer','labels','mediaCreator','podcastHost','bookNarrator','mediaCollection','episodeNumber','mediaGenre','mediaReleased','mediaDuration','mediaProgress','videoResolution','mediaFile','mediaUrl','seen','body','relatedMediaNotes'];
+  const existing=layoutForType(type),layout=order.filter(key=>existing.some(p=>p.key===key)).map(key=>existing.find(p=>p.key===key));
+  existing.forEach(p=>{if(!layout.some(x=>x.key===p.key))layout.push(p)});saveTypeLayout(type,layout);
+  const feed=feeds.find(f=>f.id==='media-'+type.toLowerCase());if(feed)feed.cardProperties=['labels','mediaCreator','mediaDuration'];
+ });
+ const descriptiveLabels={
+  Track:[['Morning Ritual','Focus'],['Unwind','Rainy Days'],['Energy','Road Trip'],['Road Trip','Favorites'],['Evening','Focus']],
+  PodcastEpisode:[['Personal Development','Digital Wellbeing'],['Entrepreneurship','Personal Development'],['Community','Design'],['Creativity','Inspiration'],['Mindfulness','Wellbeing']],
+  Audiobook:[['Personal Development','Intentional Living'],['Learning','Curiosity'],['Mindfulness','Wellbeing'],['Design','Creativity'],['Memoir','Adventure']],
+  Video:[['Urbanism','Travel'],['Creativity','Behind the Scenes'],['Live Music','Inspiration'],['Nature','Visual Inspiration'],['Design','Intentional Living']]
+ };
+ const genreExamples={Track:['Electronic','Ambient','Indie','Instrumental','Electronic'],PodcastEpisode:['Technology','Ideas','Culture','Creativity','Wellbeing'],Audiobook:['Personal development','Essays','Mindfulness','Design','Memoir'],Video:['Short film','Documentary','Live performance','Art','Tutorial']};
+ mediaKinds.forEach(type=>mediaSeeds[type].forEach((seed,i)=>{
+  const c=models.find(m=>m.uid==='media-'+type+'-'+i);if(!c)return;
+  if(!c.labels?.length||c.labels.every(l=>l==='Media'))c.labels=descriptiveLabels[type][i];
+  c.mediaGenre??=[genreExamples[type][i]];
+  c.mediaReleased??='2026-'+String(6+i).padStart(2,'0')+'-'+String(10+i*2).padStart(2,'0');
+  const ext=type==='Track'?'flac':type==='Audiobook'?'m4b':type==='PodcastEpisode'?'mp3':'mp4';
+  c.mediaFile??={name:c.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-$/,'')+'.'+ext,size:Math.round(c.mediaDuration*(type==='Video'?8:type==='Track'?5:0.8)*1000000),type:type==='Video'?'video/mp4':'audio/'+(ext==='mp3'?'mpeg':ext==='m4b'?'mp4':ext),sample:true};
+  if(type==='PodcastEpisode'){c.podcastHost??=['Alex Rowan','Jamie Wells','Morgan Lane','Casey Hart','Taylor Green'][i];c.episodeNumber??=[24,18,25,9,19][i]}
+  if(type==='Audiobook')c.bookNarrator??=['Ellis Brooks','Sam Vale','Jordan Reed','Riley Hayes','Avery Lane'][i];
+  if(type==='Video')c.videoResolution??=['4K','1080p','1080p','4K','1080p'][i];
+ }));
+ saveSchemas();persistFeeds();saveModels();localStorage.setItem('notomu-media-refinement-v1','1');
+}
+function fileSizeText(size){return size>=1000000?(size/1000000).toFixed(1)+' MB':Math.max(1,Math.round((size||0)/1000))+' KB'}
+const propertyInputBeforeFiles=propertyInput;
+propertyInput=function(c,p){
+ if(p.kind!=='file')return propertyInputBeforeFiles(c,p);
+ const file=c[p.key],hasFile=file&&typeof file==='object'&&file.name;
+ const local=localMediaFiles.has(c.uid+'|'+p.key);
+ return '<div class="file-property"><div class="file-attachment">'+icon(hasFile&&file.type?.startsWith('video/')?'video':'file')+'<span><strong>'+esc(hasFile?file.name:'No file attached')+'</strong><small>'+(hasFile?fileSizeText(file.size)+' · ':'')+(local?'Available for this session':hasFile?'Example metadata · choose a local file to preview':'Choose a file for a local preview')+'</small></span></div><label class="file-choose">'+(hasFile?'Replace file':'Choose file')+'<input type="file" data-file-property="'+p.key+'" aria-label="'+esc(p.name)+' attachment"></label>'+(hasFile?'<button type="button" class="text-btn" data-file-remove="'+p.key+'">Remove</button>':'')+'<small class="file-local-note">Local preview only. Files are not uploaded; reattach after reloading.</small></div>';
+};
+const editorBeforeFileSource=propertyEditor;
+propertyEditor=function(type,p){
+ const html=editorBeforeFileSource(type,p);
+ if(p.kind==='file')return html.replace('</details>','<p class="small muted">Stores file metadata. In this mockup, choosing a file makes it available locally for the current browser session.</p></details>');
+ if(p.kind!=='media_player')return html;
+ return html.replace('</details>','<label class="form-field"><span>File source property</span><select data-player-file-source="'+p.key+'">'+opts([['','No file source'],...definitions(type).filter(x=>x.kind==='file').map(x=>[x.key,x.name])],p.mediaFileSource||'')+'</select></label><p class="small muted">An attached local file takes precedence over the URL source.</p></details>');
+};
+document.addEventListener('change',e=>{
+ const d=e.target.dataset;
+ if(d.playerFileSource)changeDefinition(d.playerFileSource,p=>p.mediaFileSource=e.target.value);
+ if(!d.fileProperty)return;
+ const file=e.target.files?.[0];if(!file)return;
+ const c=currentItem(),key=d.fileProperty,lookup=c.uid+'|'+key;
+ if(localMediaFiles.has(lookup))URL.revokeObjectURL(localMediaFiles.get(lookup));
+ localMediaFiles.set(lookup,URL.createObjectURL(file));
+ c[key]={name:file.name,size:file.size,type:file.type,sample:false};updateCurrent();render();toast('File ready for this session. Nothing was uploaded.');
+});
+document.addEventListener('click',e=>{
+ const button=e.target.closest('[data-file-remove]');if(!button)return;
+ const c=currentItem(),key=button.dataset.fileRemove,lookup=c.uid+'|'+key;
+ if(localMediaFiles.has(lookup)){URL.revokeObjectURL(localMediaFiles.get(lookup));localMediaFiles.delete(lookup)}
+ c[key]=null;updateCurrent();render();
+});
+const displayBeforeMediaRefine=displayProp;
+displayProp=function(c,k){
+ const p=definitions(c.type).find(p=>p.key===k);
+ if(p?.kind==='file')return c[k]?.name||'Empty';
+ if(p?.kind==='number')return c[k]===undefined||c[k]===''?'Empty':String(c[k]);
+ return displayBeforeMediaRefine(c,k);
+};
+const cardsBeforeMediaRefine=cardProperties;
+cardProperties=function(c,f){
+ if(!mediaKinds.includes(c.type))return cardsBeforeMediaRefine(c,f);
+ const defs=definitions(c.type),visible=(f.cardProperties===undefined?['labels']:f.cardProperties).filter(k=>defs.some(p=>p.key===k));
+ return visible.map(k=>'<span class="card-property"><span>'+esc(defs.find(p=>p.key===k)?.name||k)+'</span><strong>'+esc(displayProp(c,k))+'</strong></span>').join('');
+};
+// Sample media notes inherit descriptive topics while retaining their own Note schema.
+if(!localStorage.getItem('notomu-media-note-labels-v1')){
+ models.filter(c=>c.uid.startsWith('media-note-')).forEach(note=>{const media=models.find(c=>c.uid===note.relatedMedia);if(media&&(!note.labels?.length||note.labels.every(l=>l==='Media')))note.labels=[...(media.labels||[])]});
+ saveModels();localStorage.setItem('notomu-media-note-labels-v1','1');
+}
 
 render();syncDrawer();
 </script></body></html>
