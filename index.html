@@ -784,6 +784,9 @@ settingsPage=function(){const wrapper=document.createElement('div');wrapper.inne
 const mobileBeforeTypeLabels=mobileSectionTitle;
 mobileSectionTitle=function(){return state.settingsSection?.startsWith('type:')?typeName(state.settingsSection.slice(5)):mobileBeforeTypeLabels()};
 document.addEventListener('change',e=>{if(e.target.dataset.typeLabel){const name=e.target.value.trim();if(!name)return;typeLabels[activeSchemaType()][e.target.dataset.typeLabel]=name;saveTypeLabels();render()}});
+
+const renderBeforePluralGroups=render;
+render=function(){renderBeforePluralGroups();if(state.page==='today'&&feeds.find(f=>f.id===activeFeed)?.groupBy==='type')$('#main').querySelectorAll('.feed-group').forEach(group=>{const uid=group.querySelector('.item-card')?.dataset.openItem,c=models.find(c=>c.uid===uid),label=group.querySelector('.feed-group-header>span');if(c&&label)label.textContent=typeName(c.type,group.querySelectorAll('.item-card').length!==1)})};
 render();syncDrawer();
 
 </script></body></html>
