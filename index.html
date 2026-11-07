@@ -50,6 +50,23 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .settings-page-mode .bottom-dock{display:none}.settings-page-mode .workspace{max-width:1080px;padding:0 28px 70px}.settings-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:48px;align-items:start}.settings-index{position:sticky;top:100px;max-height:calc(100dvh - 120px);overflow:auto;padding:0 8px 25px 0}.settings-index .eyebrow{margin:25px 10px 10px;font-size:9px}.settings-index .eyebrow:first-child{margin-top:8px}.settings-index button{display:flex;align-items:center;gap:11px;width:100%;padding:10px;border-radius:7px;text-align:left;font-size:12px;color:var(--muted)}.settings-index button:hover{background:var(--soft)}.settings-index button.active{background:var(--sage);color:var(--green)}.settings-index .icon{width:16px;height:16px}.settings-panel{padding:4px 0 50px;min-width:0}.settings-section-title{font:32px var(--serif);margin:0 0 25px}.settings-panel .layout-stack{max-height:none}.settings-panel .dialog-footer{position:sticky;bottom:0;background:var(--bg);padding:18px 0}.settings-panel .form-field{margin-bottom:18px}.settings-page-mode .unified-header>.page-symbol{display:none}.settings-page-mode .unified-header h1{margin-left:0}.settings-page-mode .unified-header>.icon-btn{margin-left:0}@media(max-width:650px){.settings-page-mode .workspace{padding:0 16px 50px}.settings-layout{grid-template-columns:1fr;gap:24px}.settings-index{position:static;max-height:210px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px;padding-bottom:15px}.settings-index .eyebrow{width:100%;margin:10px 6px 3px}.settings-index button{width:auto;padding:8px;font-size:11px}.settings-panel{padding-top:0}}
 
 .property-definition{padding:0 12px 10px 39px}.property-definition summary{display:flex;gap:12px;align-items:center;cursor:pointer;font-size:11px;color:var(--muted);padding:7px 0}.property-definition summary:before{content:'›';font-size:17px}.property-definition[open] summary:before{transform:rotate(90deg)}.property-definition summary>span{flex:1}.property-definition small{font-size:10px}.schema-stack-entry{border-bottom:1px solid var(--line)}.schema-stack-entry:last-child{border:0}.schema-stack-entry .layout-stack-row{border-bottom:0}.definition-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:10px}.delete-property{color:#986b5c}.new-property-form{padding:22px 0;border-top:1px solid var(--line);margin-top:18px}.property-long-text{display:block;width:100%;min-height:200px;resize:vertical;background:none;border:0;padding:12px 0;font:15px/1.9 var(--sans);color:var(--ink);box-shadow:none!important}.long-property-label{display:block;font-size:10px;color:var(--muted);margin-bottom:8px}.property-token-list{display:flex;flex-wrap:wrap;gap:6px}.property-token-list input{flex:1;min-width:180px}.item-property-row input[type=checkbox]{width:17px;height:17px;accent-color:var(--green);margin:7px}.fixed-type-value{font-size:11px}@media(max-width:550px){.definition-fields{grid-template-columns:1fr}.property-definition{padding-left:14px}}
+
+@media(max-width:650px){
+.settings-mobile-index .settings-layout,.settings-mobile-detail .settings-layout{display:block}
+.settings-mobile-index .settings-panel{display:none}
+.settings-mobile-index .settings-index{display:block;max-height:none;overflow:visible;border:0;padding:0 0 30px}
+.settings-mobile-index .settings-index .eyebrow{margin:28px 4px 10px;font-size:10px}
+.settings-mobile-index .settings-index button{width:100%;padding:17px 12px;margin:0;border-radius:0;border-bottom:1px solid var(--line);font-size:14px;gap:14px;background:transparent;color:var(--ink)}
+.settings-mobile-index .settings-index button:after{content:'›';margin-left:auto;font-size:21px;color:var(--muted)}
+.settings-mobile-index .settings-index button.active{background:transparent;font-weight:400}
+.settings-mobile-index .settings-index button:hover{background:var(--soft)}
+.settings-mobile-index .settings-index .icon{width:19px;height:19px}
+.settings-mobile-detail .settings-index{display:none}
+.settings-mobile-detail .settings-panel{display:block;padding-top:0}
+.settings-mobile-detail .settings-section-title{display:none}
+.settings-mobile-detail .unified-header>.icon-btn{margin-left:0}
+.settings-mobile-detail .settings-layout{padding-top:4px}
+}
 </style>
 </head>
 <body>
@@ -427,7 +444,7 @@ const pageBeforeCentralSettings=pageContext;
 pageContext=function(){return state.page==='settings'?{title:'Settings',icon:cog(),kind:'settings'}:pageBeforeCentralSettings()};
 const renderBeforeCentralSettings=render;
 render=function(){renderBeforeCentralSettings();document.body.classList.toggle('settings-page-mode',state.page==='settings');if(state.page==='settings'){cleanSettingsPanel();const gear=$('#main .unified-header [data-context-settings]');if(gear)gear.remove();$('#main .unified-header').insertAdjacentHTML('afterbegin','<button class="icon-btn" data-page="home" aria-label="Home">'+homeSymbol()+'</button>')}};
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;if(d.settingsSection){e.preventDefault();e.stopImmediatePropagation();state.settingsSection=d.settingsSection;render();window.scrollTo(0,0)}if(state.page==='settings'&&('layoutDone'in d||d.action==='closeModal')){e.preventDefault();e.stopImmediatePropagation()}},true);
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;if(d.settingsSection){e.preventDefault();e.stopImmediatePropagation();state.settingsListScroll=window.scrollY;state.settingsMobileDetail=true;state.settingsSection=d.settingsSection;render();window.scrollTo(0,0)}if(state.page==='settings'&&('layoutDone'in d||d.action==='closeModal')){e.preventDefault();e.stopImmediatePropagation()}},true);
 document.addEventListener('submit',e=>{if(state.page!=='settings'||e.target.id!=='feed-definition')return;e.preventDefault();e.stopImmediatePropagation();draft.name=$('#feed-name').value.trim();if(!draft.name)return;const i=feeds.findIndex(f=>f.id===draft.id);if(i<0)feeds.push(draft);else feeds[i]=draft;persistFeeds();render();toast('Feed settings saved.')},true);
 document.addEventListener('change',e=>{if(e.target.id==='central-calendar-ideas')state.showIdeas=e.target.checked;if(e.target.id==='central-task-view')state.taskFilter=e.target.value;if(e.target.id==='central-experience-compact'){const name=state.settingsSection.slice(11);experiencePreferences[name]={compact:e.target.checked};localStorage.setItem('notomu-experience-settings',JSON.stringify(experiencePreferences))}});
 
@@ -452,6 +469,20 @@ document.addEventListener('change',e=>{const d=e.target.dataset;if(d.definitionN
 document.addEventListener('input',e=>{const d=e.target.dataset;if(!d.schemaProperty||e.target.tagName==='SELECT'||['checkbox','date'].includes(e.target.type))return;const c=currentItem(),p=definitions(c.type).find(p=>p.key===d.schemaProperty);if(p&&!p.fixed){c[p.key]=p.kind==='number'?(e.target.value===''?'':Number(e.target.value)):p.kind==='multi_select'?e.target.value.split(',').map(x=>x.trim()).filter(Boolean):e.target.value;updateCurrent()}});
 const saveNewBeforeSchemas=saveNewItem;
 saveNewItem=function(){const c=currentItem();if(!definitions(c.type).some(p=>p.key==='title')){c.title=c.title||'Untitled '+c.type}saveNewBeforeSchemas()};
+
+state.settingsMobileDetail=false;state.settingsListScroll=0;
+navigationKeys.push('settingsMobileDetail','settingsListScroll');
+const mobileSettingsQuery=window.matchMedia('(max-width:650px)');
+const openSettingsBeforeMobile=openSettings;
+openSettings=function(section='app'){state.settingsMobileDetail=!(state.page==='home'&&section==='app');state.settingsListScroll=0;openSettingsBeforeMobile(section)};
+function mobileSectionTitle(){const section=state.settingsSection||'app';if(section==='app')return 'App';if(section.startsWith('feed:'))return feeds.find(f=>f.id===section.slice(5))?.name||'Feed';if(section.startsWith('type:'))return section.slice(5);return {tasks:'Tasks',calendar:'Calendar',studio:'Creative studio',community:'Community',inbox:'Inbox',library:'Items'}[section.slice(11)]||'Experience'}
+function settingsMobileBack(){state.settingsMobileDetail=false;render();requestAnimationFrame(()=>window.scrollTo(0,state.settingsListScroll||0))}
+const renderBeforeMobileSettings=render;
+render=function(){renderBeforeMobileSettings();const mobile=state.page==='settings'&&mobileSettingsQuery.matches,detail=mobile&&state.settingsMobileDetail;document.body.classList.toggle('settings-mobile-index',mobile&&!detail);document.body.classList.toggle('settings-mobile-detail',detail);if(detail){const header=$('#main .unified-header');header.querySelector('[data-page="home"]')?.remove();header.querySelector('h1').textContent=mobileSectionTitle();header.insertAdjacentHTML('afterbegin','<button class="icon-btn" data-mobile-settings-back aria-label="Back to settings">'+icon('chevronLeft')+'</button>')}if(mobile&&!detail){$('#settings-panel').setAttribute('inert','');$('#settings-panel').setAttribute('aria-hidden','true')}if(detail){$('.settings-index').setAttribute('inert','');$('.settings-index').setAttribute('aria-hidden','true')}};
+document.addEventListener('click',e=>{if(e.target.closest('[data-mobile-settings-back]')){e.preventDefault();e.stopImmediatePropagation();settingsMobileBack()}},true);
+const historyBackBeforeMobile=returnToLocation;
+returnToLocation=function(){if(state.page==='settings'&&mobileSettingsQuery.matches&&state.settingsMobileDetail){settingsMobileBack();return}historyBackBeforeMobile()};
+mobileSettingsQuery.addEventListener('change',()=>{if(state.page==='settings')render()});
 render();syncDrawer();
 
 </script></body></html>
