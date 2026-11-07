@@ -593,17 +593,31 @@ paths.file='<path d="M14 2H5a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8Z"
 const fileProperties=[{key:'fileName',name:'Filename',kind:'text'},{key:'fileFormat',name:'Format',kind:'select',options:['PDF','JPEG','PNG','MP3','MP4','XLSX','Other']},{key:'fileSize',name:'Size (MB)',kind:'number'},{key:'fileUrl',name:'File URL',kind:'url'}];
 const fileDefs=definitions('File');fileProperties.forEach(p=>{if(!fileDefs.some(d=>d.key===p.key))fileDefs.push(p)});saveSchemas();
 const sampleFiles=[
- ['A small project, thoughtfully planned','project-brief.pdf','PDF',1.2,'A sample project brief: goals, creative direction, and a few useful references.',['Creative']],
- ['Light through the window','morning-light.jpg','JPEG',4.8,'A sample photograph from an unhurried morning. Warm light, quiet shadows, and a moment worth keeping.',['Personal']],
- ['Ideas from a long walk','walking-ideas.mp3','MP3',8.4,'A sample voice memo collecting a few ideas before they disappear.',['To explore']],
- ['A weekend in motion','weekend-film.mp4','MP4',42,'A sample short film: little moments, familiar faces, and an afternoon outside.',['Personal']],
- ['A little room in the budget','monthly-budget.xlsx','XLSX',0.3,'A sample spreadsheet for organizing a month of plans and possibilities.',['Personal']]
+ ['project-brief.pdf','project-brief.pdf','PDF',1.2,'A sample project brief: goals, creative direction, and a few useful references.',['Creative']],
+ ['morning-light.jpg','morning-light.jpg','JPEG',4.8,'A sample photograph from an unhurried morning. Warm light, quiet shadows, and a moment worth keeping.',['Personal']],
+ ['walking-ideas.mp3','walking-ideas.mp3','MP3',8.4,'A sample voice memo collecting a few ideas before they disappear.',['To explore']],
+ ['weekend-film.mp4','weekend-film.mp4','MP4',42,'A sample short film: little moments, familiar faces, and an afternoon outside.',['Personal']],
+ ['monthly-budget.xlsx','monthly-budget.xlsx','XLSX',0.3,'A sample spreadsheet for organizing a month of plans and possibilities.',['Personal']]
 ];
 sampleFiles.forEach(([title,fileName,fileFormat,fileSize,body,labels],i)=>{const uid='file-example-'+i;if(!models.some(c=>c.uid===uid))models.push({uid,type:'File',icon:'file',title,body,fileName,fileFormat,fileSize,fileUrl:'',source:'Sample files',labels,created:new Date(Date.now()-(i+1)*86400000).toISOString().slice(0,10),modified:new Date(Date.now()-(i+10)*3600000).toISOString(),time:(i+1)+' days ago',status:'Open',priority:'Normal',seen:false})});
 if(!feeds.some(f=>f.id==='files')){feeds.push({id:'files',name:'Files',icon:'file',rules:[{field:'type',op:'is',value:'File'}],sources:[],sorts:[{field:'modified',dir:'desc'}],cardProperties:['fileFormat','fileSize','labels'],hideSeen:false});persistFeeds()}
 saveModels();
 const itemPageBeforeFiles=itemPage;
-itemPage=function(){const markup=itemPageBeforeFiles();if(currentItem()?.type!=='File')return markup;const wrapper=document.createElement('div');wrapper.innerHTML=markup;const doc=wrapper.querySelector('.document-item');doc.insertAdjacentHTML('beforeend','<div class="sample-file-preview">'+icon('file')+'<span>Sample file metadata<span>No attachment is uploaded in this mockup.</span></span></div>');return wrapper.innerHTML};
+itemPage=function(){const markup=itemPageBeforeFiles();if(currentItem()?.type!=='File')return markup;const wrapper=document.createElement('div');wrapper.innerHTML=markup;const doc=wrapper.querySelector('.document-item');doc.insertAdjacentHTML('beforeend','<div class="sample-file-preview">'+icon(fileIconFor(currentItem()))+'<span>Sample file metadata<span>No attachment is uploaded in this mockup.</span></span></div>');return wrapper.innerHTML};
+
+paths.filePdf='<path d="M14 2H5v20h14V7Z"/><path d="M14 2v6h5"/><text x="6" y="17" font-size="5" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">PDF</text>';
+paths.fileImage='<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 3-3 6 6"/>';
+paths.fileAudio='<path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="17" cy="16" rx="3" ry="3"/>';
+paths.fileVideo='<rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3M7 9l5 3-5 3Z"/>';
+paths.fileSpreadsheet='<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 8h18M3 13h18M3 18h18M9 3v18M15 3v18"/>';
+function fileIconFor(c){const extension=String(c.fileName||c.title||'').split('.').pop().toLowerCase(),format=String(c.fileFormat||extension).toLowerCase();if(format==='pdf'||extension==='pdf')return 'filePdf';if(['jpeg','jpg','png','gif','webp','svg','heic'].includes(format)||['jpeg','jpg','png','gif','webp','svg','heic'].includes(extension))return 'fileImage';if(['mp3','wav','m4a','flac','aac','ogg'].includes(format)||['mp3','wav','m4a','flac','aac','ogg'].includes(extension))return 'fileAudio';if(['mp4','mov','webm','avi','mkv'].includes(format)||['mp4','mov','webm','avi','mkv'].includes(extension))return 'fileVideo';if(['xlsx','xls','csv','ods'].includes(format)||['xlsx','xls','csv','ods'].includes(extension))return 'fileSpreadsheet';return 'file'}
+const oldFileTitles=['A small project, thoughtfully planned','Light through the window','Ideas from a long walk','A weekend in motion','A little room in the budget'];
+models.forEach(c=>{if(c.type!=='File')return;const i=Number(c.uid.replace('file-example-',''));if(c.uid.startsWith('file-example-')&&c.title===oldFileTitles[i])c.title=c.fileName;c.icon=fileIconFor(c)});saveModels();
+const feedItemsBeforeFileIcons=feedItems;
+feedItems=function(){return feedItemsBeforeFileIcons().map(c=>c.type==='File'?{...c,icon:fileIconFor(c)}:c)};
+const renderBeforeFileIcons=render;
+render=function(){models.forEach(c=>{if(c.type==='File')c.icon=fileIconFor(c)});if(newDraft?.type==='File')newDraft.icon=fileIconFor(newDraft);renderBeforeFileIcons()};
+document.addEventListener('change',e=>{if(state.page==='item'&&currentItem()?.type==='File'&&['fileFormat','fileName'].includes(e.target.dataset.schemaProperty)){currentItem().icon=fileIconFor(currentItem());saveModels();render()}});
 render();syncDrawer();
 
 </script></body></html>
