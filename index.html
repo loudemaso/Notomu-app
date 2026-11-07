@@ -723,7 +723,7 @@ const saveBeforeRelatedContext=saveNewItem;
 saveNewItem=function(){saveBeforeRelatedContext();if(!newDraft)relatedCreationContext=null};
 
 paths.person='<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>';
-const defaultTypeLabels={Note:['Note','Notes'],Task:['Task','Tasks'],Event:['Event','Events'],Article:['Article','Articles'],Message:['Message','Messages'],File:['File','Files'],Job:['Job','Jobs'],Person:['Person','People'],Track:['Track','Tracks'],PodcastEpisode:['Podcast Episode','Podcast Episodes'],Audiobook:['Audiobook','Audiobooks'],Video:['Video','Videos']};
+const defaultTypeLabels={Note:['Note','Notes'],Task:['Task','Tasks'],Event:['Event','Events'],Article:['Article','Articles'],Message:['Message','Messages'],File:['File','Files'],Job:['Job','Jobs'],Person:['Person','People'],Track:['Song','Music'],PodcastEpisode:['Podcast Episode','Podcast Episodes'],Audiobook:['Audiobook','Audiobooks'],Video:['Video','Videos']};
 let typeLabels={};try{typeLabels=JSON.parse(localStorage.getItem('notomu-type-labels-v1')||'{}')}catch{}
 itemTypesV2.forEach(type=>{if(!typeLabels[type])typeLabels[type]={singular:defaultTypeLabels[type][0],plural:defaultTypeLabels[type][1]}});
 function typeName(type,plural=false){return typeLabels[type]?.[plural?'plural':'singular']||type}
@@ -817,7 +817,7 @@ pageContext=function(){return state.page==='media'?{title:'Media',icon:icon('hea
 const renderBeforeMedia=render;
 render=function(){renderBeforeMedia();document.body.classList.toggle('media-experience-mode',state.page==='media');if(state.page==='media')document.body.classList.add('experience-mode')};
 const sectionBeforeMedia=sectionMarkup;
-sectionMarkup=function(){if(state.settingsSection==='experience:media')return '<h2 class="settings-section-title">Media</h2><p class="small muted">A shared library of tracks, podcast episodes, audiobooks, and videos. Playback controls are a visual mockup.</p><label class="form-field"><span>Open library to</span><select id="media-default-category">'+opts([['All','All'],...mediaKinds.map(t=>[t,mediaNames[t]])],experiencePreferences.media?.category||'All')+'</select></label>';return sectionBeforeMedia()};
+sectionMarkup=function(){if(state.settingsSection==='experience:media')return '<h2 class="settings-section-title">Media</h2><p class="small muted">A shared library of music, podcast episodes, audiobooks, and videos. Playback controls are a visual mockup.</p><label class="form-field"><span>Open library to</span><select id="media-default-category">'+opts([['All','All'],...mediaKinds.map(t=>[t,mediaNames[t]])],experiencePreferences.media?.category||'All')+'</select></label>';return sectionBeforeMedia()};
 const settingsBeforeMedia=settingsPage;
 settingsPage=function(){return settingsBeforeMedia().replace('<div class="eyebrow">Item types</div>','<button data-settings-section="experience:media" class="'+(state.settingsSection==='experience:media'?'active':'')+'">'+icon('headphones')+'<span>Media</span></button><div class="eyebrow">Item types</div>')};
 const mobileTitleBeforeMedia=mobileSectionTitle;
@@ -826,6 +826,9 @@ const goBeforeMedia=go;
 go=function(page){if(page==='media'&&state.page!=='media'){state.mediaCategory=experiencePreferences.media?.category||'All'}goBeforeMedia(page)};
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;if(d.mediaCategory){state.mediaCategory=d.mediaCategory;render()}if(d.mediaSelect){state.mediaUid=d.mediaSelect;state.mediaPlaying=false;const y=window.scrollY;render();window.scrollTo(0,y)}if('mediaPreview'in d){state.mediaPlaying=!state.mediaPlaying;render();toast('Player controls are a visual mockup.')}if(d.mediaStep){const items=feedItems().filter(c=>mediaKinds.includes(c.type)&&(state.mediaCategory==='All'||c.type===state.mediaCategory)),i=items.findIndex(c=>c.uid===state.mediaUid);if(items.length){state.mediaUid=items[(i+Number(d.mediaStep)+items.length)%items.length].uid;state.mediaPlaying=false;render()}}});
 document.addEventListener('change',e=>{if(e.target.id==='media-default-category'){experiencePreferences.media={...experiencePreferences.media,category:e.target.value};localStorage.setItem('notomu-experience-settings',JSON.stringify(experiencePreferences))}});
+// Rename the displayed media type while preserving existing items and feed bindings.
+if(['Track','Music'].includes(typeLabels.Track?.singular))typeLabels.Track.singular='Song';
+if(typeLabels.Track?.plural==='Tracks')typeLabels.Track.plural='Music';
+localStorage.setItem('notomu-type-labels-v1',JSON.stringify(typeLabels));
 render();syncDrawer();
-
 </script></body></html>
