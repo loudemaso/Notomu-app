@@ -624,6 +624,12 @@ homeBlocks.forEach(b=>{if(b.title==='Notes & thoughts')b.title='Notes'});saveHom
 
 feeds.forEach(f=>{if(f.name==='Worth reading'||f.name==='Worth Reading')f.name='Articles'});persistFeeds();
 homeBlocks.forEach(b=>{if(b.title==='Worth reading'||b.title==='Worth Reading')b.title='Articles'});saveHomeBlocks();
+
+if(!localStorage.getItem('notomu-favorites-before-feeds-v1')){
+ const favorite=homeBlocks.find(b=>b.id==='favorites')||homeBlocks.find(b=>b.kind==='favorites');
+ if(favorite){homeBlocks=homeBlocks.filter(b=>b!==favorite);const feedIndex=homeBlocks.findIndex(b=>b.kind==='feeds');homeBlocks.splice(feedIndex<0?0:feedIndex,0,favorite);saveHomeBlocks()}
+ localStorage.setItem('notomu-favorites-before-feeds-v1','1');
+}
 render();syncDrawer();
 
 </script></body></html>
