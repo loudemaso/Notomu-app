@@ -381,7 +381,7 @@ render=function(){renderBeforeHome();const button=$('#main .experience-header [d
 $('#sidebar').setAttribute('hidden','');$('#shade').setAttribute('hidden','');document.querySelector('.edge-swipe')?.remove();
 state.page='home';
 // Unified item pages and property-based cards.
-const itemTypesV2=['Note','Task','Event','Article','Message','File'];
+const itemTypesV2=['Note','Task','Event','Article','Message','File','Job'];
 const propertyNames={labels:'Labels',status:'Status',priority:'Priority',source:'Source',created:'Created',date:'Date',location:'Location',url:'URL',channel:'Channel',person:'Person'};
 const modelKey='notomu-item-pages-v2';
 let lastCreatedType='Note',selectedUid='',itemReturn='today',newDraft=null,appPrefs={compact:false};
@@ -399,7 +399,7 @@ home=function(){const f=feeds.find(f=>f.id===activeFeed),cards=selectedItems(f);
 const originalEditorV2=drawEditor;
 drawEditor=function(){originalEditorV2();const footer=$('#feed-definition .dialog-footer');footer.insertAdjacentHTML('beforebegin','<section class="editor-section"><h3>Card properties</h3><p class="small muted">Choose what appears beneath the divider on each card.</p><div class="property-choices">'+Object.entries(propertyNames).map(([key,name])=>'<label><input type="checkbox" data-card-property="'+key+'" '+((draft.cardProperties===undefined?['labels','status']:draft.cardProperties).includes(key)?'checked':'')+'>'+name+'</label>').join('')+'</div></section>')};
 function resolveNewType(){if(state.page==='today'){const f=feeds.find(f=>f.id===activeFeed);const possible=itemTypesV2.filter(type=>{const tests=f.rules.map(r=>r.field==='type'?matches({type},r):true);return !tests.length|| (f.match==='any'?tests.some(Boolean):tests.every(Boolean))});if(possible.length===1)return possible[0]}return lastCreatedType}
-function typeIconV2(type){return {Note:'note',Task:'check',Event:'calendar',Article:'book',Message:'message',File:'file'}[type]}
+function typeIconV2(type){return {Note:'note',Task:'check',Event:'calendar',Article:'book',Message:'message',File:'file',Job:'briefcase'}[type]}
 function openUnified(uid){if(!models.some(c=>c.uid===uid))return;itemReturn=state.page==='item'?itemReturn:state.page;selectedUid=uid;newDraft=null;if($('#modal').open)closeModal();dockSearchOpen=false;dockSearchRoot.hidden=true;go('item')}
 capture=function(type){itemReturn=state.page==='item'?itemReturn:state.page;const kind=itemTypesV2.includes(type)?type:resolveNewType();newDraft={uid:'item-'+Date.now(),type:kind,icon:typeIconV2(kind),title:'',body:'',labels:[],source:'Notomu',created:new Date().toISOString().slice(0,10),time:'Just now',status:kind==='Event'?'Idea':'Open',priority:'Normal',date:'',location:'',url:'',channel:kind==='Message'?'Email':'',person:''};selectedUid=newDraft.uid;if($('#modal').open)closeModal();dockSearchOpen=false;dockSearchRoot.hidden=true;go('item');$('#item-title')?.focus()};
 function currentItem(){return newDraft||models.find(c=>c.uid===selectedUid)}
@@ -647,6 +647,21 @@ sectionMarkup=function(){if(state.settingsSection==='feed:new'){editFeed();retur
 const renderBeforeGlobalBack=render;
 render=function(){renderBeforeGlobalBack();const header=$('#main .unified-header');if(!header)return;header.querySelectorAll('[data-page="home"],[data-mobile-settings-back]').forEach(el=>el.remove());const canGoBack=locationStack.length>0||(state.page==='settings'&&mobileSettingsQuery.matches&&state.settingsMobileDetail);if(state.page!=='home')header.insertAdjacentHTML('afterbegin','<button class="icon-btn global-back" data-global-back aria-label="Back" title="Back" '+(canGoBack?'':'disabled')+'>'+icon('chevronLeft')+'</button>')};
 document.addEventListener('click',e=>{if(!e.target.closest('[data-global-back]'))return;e.preventDefault();e.stopImmediatePropagation();returnToLocation()},true);
+
+paths.briefcase='<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12a20 20 0 0 0 18 0M10 12v3h4v-3"/>';
+const jobDefinitions=[{key:'jobCompany',name:'Company',kind:'text'},{key:'jobLocation',name:'Location',kind:'text'},{key:'jobArrangement',name:'Work arrangement',kind:'select',options:['Remote','Hybrid','On-site']},{key:'jobEmployment',name:'Employment type',kind:'select',options:['Full-time','Part-time','Contract']},{key:'jobCompensation',name:'Compensation',kind:'text'},{key:'jobApplicationStatus',name:'Application status',kind:'select',options:['Interested','Applied','Interviewing','Offer','Not pursuing']},{key:'jobUrl',name:'Listing URL',kind:'url'}];
+const jobSchema=definitions('Job');jobDefinitions.forEach(p=>{if(!jobSchema.some(x=>x.key===p.key))jobSchema.push(p)});saveSchemas();
+if(!typePreferences.Job?.layout){typePreferences.Job={...typePreferences.Job,layout:['type','title','jobCompany','jobLocation','jobArrangement','jobEmployment','jobCompensation','jobApplicationStatus','jobUrl','labels','status','priority','source','created','seen','body'].map(key=>({key,visible:true}))};localStorage.setItem('notomu-type-settings',JSON.stringify(typePreferences))}
+const sampleJobs=[
+ ['Account Executive — Enterprise Software','Northstar Systems (demo)','Remote · US','Remote','Full-time','$100k–$130k base + commission','Interested','Own the sales cycle for a fictional enterprise software team. Partner with solution engineers, lead discovery, and help customers connect business goals with practical technology.'],
+ ['Solutions Engineer — Climate Tech','Evergreen Labs (demo)','Denver, CO','Hybrid','Full-time','$115k–$150k base','Applied','Translate customer needs into demonstrations and solution designs for a fictional climate software platform. Work across sales, product, and implementation.'],
+ ['Business Systems Architect','Fieldwork Studio (demo)','Remote · US','Remote','Contract','$90–$120 / hour','Interviewing','Map business processes, define a data model, and connect operational tools for a fictional growing company. Deliver clear systems that a small team can maintain.'],
+ ['Customer Success Manager','Common Ground Software (demo)','Denver, CO','Hybrid','Full-time','$85k–$110k base','Interested','Guide onboarding and adoption for a fictional collaboration product. Build trusted relationships, run business reviews, and help teams reach meaningful outcomes.'],
+ ['Creative Producer — Live Events','Afterglow Collective (demo)','Denver, CO','On-site','Part-time','$35–$50 / hour','Interested','Coordinate a fictional live-event production calendar, develop creative briefs, and work with artists, venues, and photo/video teams.']
+];
+sampleJobs.forEach(([title,jobCompany,jobLocation,jobArrangement,jobEmployment,jobCompensation,jobApplicationStatus,body],i)=>{const uid='job-example-'+i;if(!models.some(c=>c.uid===uid))models.push({uid,type:'Job',icon:'briefcase',title,jobCompany,jobLocation,jobArrangement,jobEmployment,jobCompensation,jobApplicationStatus,jobUrl:'',body:body+'\n\nFictional example listing for the Notomu mockup. This is not an active job opportunity.',source:'Demo job listings',labels:['Career'],status:'Open',priority:'Normal',seen:false,created:new Date(Date.now()-(i+1)*86400000).toISOString().slice(0,10),modified:new Date(Date.now()-(i+24)*3600000).toISOString(),time:(i+1)+' days ago'})});
+if(!feeds.some(f=>f.id==='jobs')){feeds.push({id:'jobs',name:'Jobs',icon:'briefcase',rules:[{field:'type',op:'is',value:'Job'}],sources:[],sorts:[{field:'modified',dir:'desc'}],cardProperties:['jobCompany','jobArrangement','jobApplicationStatus'],hideSeen:false});persistFeeds()}
+saveModels();
 render();syncDrawer();
 
 </script></body></html>
