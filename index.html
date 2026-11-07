@@ -100,8 +100,17 @@ const originalGo=go;
 go=function(page){originalGo(page);if(page!=='today')document.getElementById('main').insertAdjacentHTML('afterbegin','<button class="text-btn" data-page="today" style="margin:24px 0">← Back to feed</button>')};
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.action==='itemFilter'){modal('Make it your feed.',`<p>Choose the types of items you’d like to see.</p><form id="type-filter">${['Message','Article','Note','Task','Event'].map(t=>`<label class="filter-option"><input type="checkbox" name="type" value="${t}" ${state.itemTypes.includes(t)?'checked':''}>${t}s</label>`).join('')}<p class="notice">No selection shows every type.</p><div class="dialog-footer"><button type="button" class="btn" id="clear-types">Show everything</button><button class="btn dark" type="submit">Apply filter</button></div></form>`)}if(b.id==='clear-types'){state.itemTypes=[];closeModal();go('today')}if(b.classList.contains('stream-save')){const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);b.innerHTML=icon('bookmark')+(on?'Saved':'Save');toast(on?'Saved for later.':'Removed from saved items.')}});
 document.addEventListener('submit',e=>{if(e.target.id==='type-filter'){e.preventDefault();state.itemTypes=new FormData(e.target).getAll('type');closeModal();go('today')}});
-render();
 
+const previousNav=nav;
+nav=function(){previousNav();const homeIcon='<svg class="icon home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/></svg>';document.getElementById('bottom-dock').innerHTML=[
+{page:'today',name:'Feed',svg:homeIcon},
+{page:'calendar',name:'Calendar',svg:icon('calendar')},
+{action:'capture',name:'Capture an item',svg:icon('plus'),create:true},
+{page:'inbox',name:'Inbox',svg:icon('message')},
+{action:'search',name:'Search',svg:icon('search')}
+].map(b=>`<button ${b.page?'data-page="'+b.page+'"':'data-action="'+b.action+'"'} class="${b.create?'dock-create ':''}${b.page===state.page?'active':''}" aria-label="${b.name}" title="${b.name}" ${b.page===state.page?'aria-current="page"':''}>${b.svg}${b.page==='inbox'&&attention()?'<span class="dock-dot" aria-hidden="true"></span>':''}</button>`).join('')};
+
+render();
 </script>
 </body>
 </html>
