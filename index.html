@@ -92,6 +92,8 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .seen-button{display:flex;align-items:center;justify-content:center;width:34px;height:30px;flex-shrink:0;margin-left:auto;border:1px solid var(--line);border-radius:7px;background:transparent;color:#87917f}.seen-button:hover{background:var(--sage);color:var(--green)}.seen-button .icon{width:18px;height:18px}.seen-button.is-seen{color:#405b40;background:#e5eddc;border-color:#ccd9c0}.seen-button.is-seen .icon circle{fill:currentColor;stroke:none}.item-is-seen{border-color:#e4e8df}.item-is-seen .stream-meta{opacity:.7}.card-properties{align-items:center}.seen-button:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 
 .sample-file-preview{display:flex;align-items:center;gap:14px;border:1px dashed #cdd7c4;border-radius:10px;padding:22px;margin-top:26px;background:#f0f4eb;color:var(--green);font-size:12px}.sample-file-preview>.icon{width:30px;height:30px}.sample-file-preview span span{display:block;font-size:10px;color:var(--muted);margin-top:6px}.item-card:has(.stream-meta .type-icon) .card-property strong{overflow-wrap:anywhere}
+
+.unified-header>.global-back{margin-left:-8px;margin-right:0;flex:0 0 30px;width:30px;height:34px;border-radius:6px;color:var(--ink)}.unified-header>.global-back .icon{width:21px;height:21px}.unified-header>.global-back:disabled{opacity:.22}.unified-header>.global-back:not(:disabled):hover{background:var(--soft)}.settings-page-mode .unified-header>.global-back{margin-left:-8px}.unified-header{gap:10px}
 </style>
 </head>
 <body>
@@ -469,7 +471,7 @@ const pageBeforeCentralSettings=pageContext;
 pageContext=function(){return state.page==='settings'?{title:'Settings',icon:cog(),kind:'settings'}:pageBeforeCentralSettings()};
 const renderBeforeCentralSettings=render;
 render=function(){renderBeforeCentralSettings();document.body.classList.toggle('settings-page-mode',state.page==='settings');if(state.page==='settings'){cleanSettingsPanel();const gear=$('#main .unified-header [data-context-settings]');if(gear)gear.remove();$('#main .unified-header').insertAdjacentHTML('afterbegin','<button class="icon-btn" data-page="home" aria-label="Home">'+homeSymbol()+'</button>')}};
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;if(d.settingsSection){e.preventDefault();e.stopImmediatePropagation();state.settingsListScroll=window.scrollY;state.settingsMobileDetail=true;state.settingsSection=d.settingsSection;render();window.scrollTo(0,0)}if(state.page==='settings'&&('layoutDone'in d||d.action==='closeModal')){e.preventDefault();e.stopImmediatePropagation()}},true);
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;if(d.settingsSection){e.preventDefault();e.stopImmediatePropagation();if(!mobileSettingsQuery.matches){locationStack.push(pendingLocation||rememberLocation());pendingLocation=null}state.settingsListScroll=window.scrollY;state.settingsMobileDetail=true;state.settingsSection=d.settingsSection;render();window.scrollTo(0,0)}if(state.page==='settings'&&('layoutDone'in d||d.action==='closeModal')){e.preventDefault();e.stopImmediatePropagation()}},true);
 document.addEventListener('submit',e=>{if(state.page!=='settings'||e.target.id!=='feed-definition')return;e.preventDefault();e.stopImmediatePropagation();draft.name=$('#feed-name').value.trim();if(!draft.name)return;const i=feeds.findIndex(f=>f.id===draft.id);if(i<0)feeds.push(draft);else feeds[i]=draft;persistFeeds();state.settingsSection='feed:'+draft.id;render();toast('Feed settings saved.')},true);
 document.addEventListener('change',e=>{if(e.target.id==='central-calendar-ideas')state.showIdeas=e.target.checked;if(e.target.id==='central-task-view')state.taskFilter=e.target.value;if(e.target.id==='central-experience-compact'){const name=state.settingsSection.slice(11);experiencePreferences[name]={compact:e.target.checked};localStorage.setItem('notomu-experience-settings',JSON.stringify(experiencePreferences))}});
 
@@ -636,6 +638,10 @@ settingsPage=function(){return settingsBeforeFeedCreation().replace('<div class=
 document.addEventListener('click',e=>{if(!e.target.closest('[data-settings-new-feed]'))return;state.settingsMobileDetail=true;state.settingsSection='feed:new';render()},true);
 const sectionBeforeNewFeed=sectionMarkup;
 sectionMarkup=function(){if(state.settingsSection==='feed:new'){editFeed();return settingsMarkup}return sectionBeforeNewFeed()};
+
+const renderBeforeGlobalBack=render;
+render=function(){renderBeforeGlobalBack();const header=$('#main .unified-header');if(!header)return;header.querySelectorAll('[data-page="home"],[data-mobile-settings-back]').forEach(el=>el.remove());const canGoBack=locationStack.length>0||(state.page==='settings'&&mobileSettingsQuery.matches&&state.settingsMobileDetail);header.insertAdjacentHTML('afterbegin','<button class="icon-btn global-back" data-global-back aria-label="Back" title="Back" '+(canGoBack?'':'disabled')+'>'+icon('chevronLeft')+'</button>')};
+document.addEventListener('click',e=>{if(!e.target.closest('[data-global-back]'))return;e.preventDefault();e.stopImmediatePropagation();returnToLocation()},true);
 render();syncDrawer();
 
 </script></body></html>
