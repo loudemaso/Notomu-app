@@ -94,6 +94,11 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .sample-file-preview{display:flex;align-items:center;gap:14px;border:1px dashed #cdd7c4;border-radius:10px;padding:22px;margin-top:26px;background:#f0f4eb;color:var(--green);font-size:12px}.sample-file-preview>.icon{width:30px;height:30px}.sample-file-preview span span{display:block;font-size:10px;color:var(--muted);margin-top:6px}.item-card:has(.stream-meta .type-icon) .card-property strong{overflow-wrap:anywhere}
 
 .unified-header>.global-back{margin-left:-8px;margin-right:0;flex:0 0 30px;width:30px;height:34px;border-radius:6px;color:var(--ink)}.unified-header>.global-back .icon{width:21px;height:21px}.unified-header>.global-back:disabled{opacity:.22}.unified-header>.global-back:not(:disabled):hover{background:var(--soft)}.settings-page-mode .unified-header>.global-back{margin-left:-8px}.unified-header{gap:10px}
+
+/* Settings keeps the shared icon/title alignment and has no trailing gear. */
+.settings-page-mode .unified-header>.page-symbol{display:flex;align-items:center;color:var(--green)}
+.settings-page-mode .unified-header h1{margin:0}
+.settings-page-mode .unified-header{gap:10px}
 </style>
 </head>
 <body>
@@ -640,7 +645,7 @@ const sectionBeforeNewFeed=sectionMarkup;
 sectionMarkup=function(){if(state.settingsSection==='feed:new'){editFeed();return settingsMarkup}return sectionBeforeNewFeed()};
 
 const renderBeforeGlobalBack=render;
-render=function(){renderBeforeGlobalBack();const header=$('#main .unified-header');if(!header)return;header.querySelectorAll('[data-page="home"],[data-mobile-settings-back]').forEach(el=>el.remove());const canGoBack=locationStack.length>0||(state.page==='settings'&&mobileSettingsQuery.matches&&state.settingsMobileDetail);header.insertAdjacentHTML('afterbegin','<button class="icon-btn global-back" data-global-back aria-label="Back" title="Back" '+(canGoBack?'':'disabled')+'>'+icon('chevronLeft')+'</button>')};
+render=function(){renderBeforeGlobalBack();const header=$('#main .unified-header');if(!header)return;header.querySelectorAll('[data-page="home"],[data-mobile-settings-back]').forEach(el=>el.remove());const canGoBack=locationStack.length>0||(state.page==='settings'&&mobileSettingsQuery.matches&&state.settingsMobileDetail);if(state.page!=='home')header.insertAdjacentHTML('afterbegin','<button class="icon-btn global-back" data-global-back aria-label="Back" title="Back" '+(canGoBack?'':'disabled')+'>'+icon('chevronLeft')+'</button>')};
 document.addEventListener('click',e=>{if(!e.target.closest('[data-global-back]'))return;e.preventDefault();e.stopImmediatePropagation();returnToLocation()},true);
 render();syncDrawer();
 
