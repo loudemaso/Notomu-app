@@ -101,6 +101,8 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .settings-page-mode .unified-header{gap:10px}
 
 .related-property-section{margin:32px 0;padding-top:24px;border-top:1px solid var(--line)}.related-property-section h2{font:26px var(--serif);margin:0}.related-feed-caption{font-size:10px;color:var(--muted);margin:9px 0 16px}.related-item-card{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:18px;border:1px solid var(--line);border-radius:9px;background:white;margin-bottom:10px}.related-item-card:hover{background:var(--soft);border-color:#bdcbb3}.related-item-card>span{flex:1;min-width:0}.related-item-card strong{font-size:13px;font-weight:500}.related-item-card small{display:block;color:var(--muted);font-size:10px;margin-top:6px}.related-item-card p{font-size:11px;line-height:1.7;color:var(--muted);margin:10px 0 0}.related-item-card>.icon{width:17px;color:var(--green)}.related-empty{font-size:12px;color:var(--muted);padding:20px;background:var(--soft);border-radius:8px}.related-definition{border-top:1px solid var(--line);padding-top:18px;margin-top:14px}.related-rule{padding:12px;background:var(--soft);border-radius:8px;margin:12px 0}.related-definition select{width:100%}.related-definition .small{line-height:1.7}
+
+.related-create{border:1px solid #dce5d4;background:var(--sage);color:var(--green);border-radius:50%;width:30px;height:30px}.related-create .icon{width:16px;height:16px}.related-create:hover{background:#dbe7d0}.related-creation-note{display:flex;gap:8px;align-items:center;font-size:11px;line-height:1.7;color:var(--green);padding:12px 14px;background:var(--sage);border-radius:8px;margin-top:20px}.related-creation-note .icon{width:15px;height:15px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -691,6 +693,30 @@ propertyEditor=function(type,p){let markup=editorBeforeRelated(type,p);if(p.kind
 function refreshRelatedEditor(key){saveSchemas();drawTypeLayout();const section=document.querySelector('[data-related-config="'+key+'"]');if(section)section.closest('details').open=true}
 document.addEventListener('change',e=>{const d=e.target.dataset;if(d.relatedFeed){const p=definitions(activeSchemaType()).find(p=>p.key===d.relatedFeed);p.relatedFeed=e.target.value;refreshRelatedEditor(p.key)}if(d.relatedRule){const p=definitions(activeSchemaType()).find(p=>p.key===d.relatedRule);p.relatedRules=relatedRuleList(p);p.relatedRules[Number(d.ruleIndex)][d.ruleKey]=e.target.value;saveSchemas()}});
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;if(d.relatedAdd){const p=definitions(activeSchemaType()).find(p=>p.key===d.relatedAdd);p.relatedRules=[...relatedRuleList(p),{target:'relatedJob',op:'is',source:'$item'}];refreshRelatedEditor(p.key)}if(d.relatedRemove){const p=definitions(activeSchemaType()).find(p=>p.key===d.relatedRemove);p.relatedRules=relatedRuleList(p).filter((r,i)=>i!==Number(d.ruleIndex));refreshRelatedEditor(p.key)}});
+
+const relatedSectionBeforeCreate=relatedSection;
+relatedSection=function(c,p){const html=relatedSectionBeforeCreate(c,p);return html.replace('<span class="pill">','<div class="row"><button class="icon-btn related-create" data-related-create="'+p.key+'" aria-label="Create item in '+esc(p.name)+'" title="Create related item" '+(feeds.some(f=>f.id===p.relatedFeed)?'':'disabled')+'>'+icon('plus')+'</button><span class="pill">').replace('</span></div><p class="related-feed-caption">','</span></div></div><p class="related-feed-caption">')};
+let relatedCreationContext=null;
+function relatedCreationTypes(feed,parent,property){return itemTypesV2.filter(type=>{const feedChecks=feed.rules.map(r=>r.field==='type'?matches({type},r):true);const feedOK=!feedChecks.length||(feed.match==='any'?feedChecks.some(Boolean):feedChecks.every(Boolean));return feedOK&&relatedRuleList(property).filter(r=>r.target==='type').every(r=>{const value=r.source==='$item'?parent.uid:parent[r.source];return matches({type},{field:'type',op:r.op,value:String(value??'')})})})}
+function applyRelatedPrefill(){if(!newDraft||!relatedCreationContext)return;const {parent,property,feed}=relatedCreationContext;let skipped=0;const defs=definitions(newDraft.type);const assignments=[];
+ if(feed.match!=='any'||feed.rules.length===1)feed.rules.filter(r=>r.field!=='type'&&r.op==='is').forEach(r=>assignments.push({target:r.field,value:r.value,op:'is'}));
+ relatedRuleList(property).forEach(r=>assignments.push({target:r.target,value:r.source==='$item'?parent.uid:parent[r.source],op:r.op}));
+ assignments.forEach(({target,value,op})=>{if(target==='type')return;const def=defs.find(p=>p.key===target);if(!def||def.kind==='related'||op==='not'||value===undefined||value===null){skipped++;return}if(def.kind==='multi_select'){const values=Array.isArray(value)?value:[value];newDraft[target]=[...new Set([...(Array.isArray(newDraft[target])?newDraft[target]:[]),...values])]}else if(def.kind==='number'){const number=Number(value);if(Number.isFinite(number))newDraft[target]=number;else skipped++}else if(def.kind==='checkbox')newDraft[target]=typeof value==='boolean'?value:String(value).toLowerCase()==='true';else newDraft[target]=Array.isArray(value)?value.join(', '):String(value)});
+ if(feed.hideSeen)newDraft.seen=false;
+ return skipped;
+}
+function createRelatedItem(key){const parent=currentItem(),property=definitions(parent.type).find(p=>p.key===key),feed=feeds.find(f=>f.id===property?.relatedFeed);if(!property||!feed)return;relatedCreationContext={parent:JSON.parse(JSON.stringify(parent)),property:JSON.parse(JSON.stringify(property)),feed:JSON.parse(JSON.stringify(feed))};const types=relatedCreationTypes(feed,parent,property),type=types.length===1?types[0]:types.includes(lastCreatedType)?lastCreatedType:types[0]||lastCreatedType;capture(type);const skipped=applyRelatedPrefill();render();$('#item-title')?.focus();if(skipped)toast('Related values pre-filled. Review rules that do not define a single value.')}
+const renderBeforeRelatedCreate=render;
+render=function(){renderBeforeRelatedCreate();if(state.page==='item'&&newDraft&&relatedCreationContext){const parent=relatedCreationContext.parent;$('#main .document-item').insertAdjacentHTML('beforebegin','<p class="related-creation-note">'+icon('layers')+'Creating in '+esc(relatedCreationContext.property.name)+' · '+esc(parent.title)+'</p>')}};
+document.addEventListener('click',e=>{const button=e.target.closest('[data-related-create]');if(button){e.preventDefault();e.stopImmediatePropagation();createRelatedItem(button.dataset.relatedCreate)}},true);
+document.addEventListener('change',e=>{if(e.target.id==='item-type'&&newDraft&&relatedCreationContext){applyRelatedPrefill();render()}});
+const captureBeforeRelatedContext=capture;
+capture=function(type){if(!creatingRelatedNow)relatedCreationContext=null;captureBeforeRelatedContext(type)};
+let creatingRelatedNow=false;
+const createRelatedBeforeGuard=createRelatedItem;
+createRelatedItem=function(key){creatingRelatedNow=true;try{createRelatedBeforeGuard(key)}finally{creatingRelatedNow=false}};
+const saveBeforeRelatedContext=saveNewItem;
+saveNewItem=function(){saveBeforeRelatedContext();if(!newDraft)relatedCreationContext=null};
 render();syncDrawer();
 
 </script></body></html>
