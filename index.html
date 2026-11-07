@@ -787,6 +787,7 @@ document.addEventListener('change',e=>{if(e.target.dataset.typeLabel){const name
 
 const renderBeforePluralGroups=render;
 render=function(){renderBeforePluralGroups();if(state.page==='today'&&feeds.find(f=>f.id===activeFeed)?.groupBy==='type')$('#main').querySelectorAll('.feed-group').forEach(group=>{const uid=group.querySelector('.item-card')?.dataset.openItem,c=models.find(c=>c.uid===uid),label=group.querySelector('.feed-group-header>span');if(c&&label)label.textContent=typeName(c.type,group.querySelectorAll('.item-card').length!==1)})};
-render();syncDrawer();
 
+document.addEventListener('input',e=>{const key=e.target.dataset.typeLabel;if(key&&e.target.value.trim()){typeLabels[activeSchemaType()][key]=e.target.value.trim();saveTypeLabels()}});
+render();syncDrawer();
 </script></body></html>
