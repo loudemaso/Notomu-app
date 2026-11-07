@@ -126,7 +126,7 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .item-media-property video{max-height:360px;background:var(--ink)}
 .media-property-definition{padding:16px;background:var(--bg);border-radius:8px;margin:12px 0}
 @media(max-width:600px){.item-media-property{padding:17px}.item-player-preview{grid-template-columns:64px 1fr;gap:14px}.item-player-art{height:64px}.item-player-track>strong{font-size:20px}.item-player-video{grid-template-columns:1fr}}
-.file-property{display:grid;gap:10px}.file-attachment{display:flex;gap:12px;align-items:center;border:1px solid var(--line);padding:12px;border-radius:9px;background:#fff}.file-attachment>.icon{width:22px;flex-shrink:0}.file-attachment span{min-width:0}.file-attachment strong{display:block;font-size:12px;overflow-wrap:anywhere;font-weight:500}.file-attachment small,.file-local-note{display:block;font-size:10px;color:var(--muted);line-height:1.6}.file-choose{font-size:11px;cursor:pointer;display:flex;align-items:center;gap:12px;color:var(--green)}.file-choose input{font-size:10px;max-width:240px}.file-property>.text-btn{justify-self:start;font-size:10px}</style>
+.file-property{display:grid;gap:10px}.file-attachment{display:flex;gap:12px;align-items:center;border:1px solid var(--line);padding:12px;border-radius:9px;background:#fff}.file-attachment>.icon{width:22px;flex-shrink:0}.file-attachment span{min-width:0}.file-attachment strong{display:block;font-size:12px;overflow-wrap:anywhere;font-weight:500}.file-attachment small,.file-local-note{display:block;font-size:10px;color:var(--muted);line-height:1.6}.file-choose{font-size:11px;cursor:pointer;display:flex;align-items:center;gap:12px;color:var(--green)}.file-choose input{font-size:10px;max-width:240px}.file-property>.text-btn{justify-self:start;font-size:10px}.media-metadata-section{margin-top:38px;padding-top:25px;border-top:1px solid var(--line)}.media-metadata-section>h2{font:22px var(--serif);margin:0 0 20px}.media-metadata-section .item-property-row{margin:0;padding-top:12px;padding-bottom:12px}</style>
 </head>
 <body>
 <div class="mobile-shade" id="shade" data-action="menu"></div>
@@ -1012,6 +1012,35 @@ if(!localStorage.getItem('notomu-media-note-labels-v1')){
  models.filter(c=>c.uid.startsWith('media-note-')).forEach(note=>{const media=models.find(c=>c.uid===note.relatedMedia);if(media&&(!note.labels?.length||note.labels.every(l=>l==='Media')))note.labels=[...(media.labels||[])]});
  saveModels();localStorage.setItem('notomu-media-note-labels-v1','1');
 }
+
+
+// Media pages put content before supporting metadata.
+if(!localStorage.getItem('notomu-media-content-first-v1')){
+ mediaKinds.forEach(type=>{
+  const defs=definitions(type),existing=layoutForType(type);
+  const primary=['type','title','labels',...defs.filter(p=>p.kind==='media_player').map(p=>p.key),...defs.filter(p=>p.kind==='long_text').map(p=>p.key),...defs.filter(p=>p.kind==='related').map(p=>p.key)];
+  const metadata=['mediaCreator','podcastHost','bookNarrator','mediaCollection','episodeNumber','mediaGenre','mediaReleased','mediaDuration','mediaProgress','videoResolution','mediaFile','mediaUrl','seen','source','created'];
+  const keys=[...new Set([...primary,...metadata,...existing.map(p=>p.key)])];
+  saveTypeLayout(type,keys.map(key=>existing.find(p=>p.key===key)).filter(Boolean));
+ });
+ localStorage.setItem('notomu-media-content-first-v1','1');
+}
+const pageBeforeMetadataGrouping=itemPage;
+itemPage=function(){
+ const html=pageBeforeMetadataGrouping(),c=currentItem();if(!c||!mediaKinds.includes(c.type))return html;
+ const root=document.createElement('div');root.innerHTML=html;
+ const article=root.querySelector('.document-item');if(!article)return html;
+ const contentKeys=new Set(definitions(c.type).filter(p=>['fixed','long_text','related','media_player'].includes(p.kind)||['title','labels'].includes(p.key)).map(p=>p.key));
+ const children=Array.from(article.children);let lastContent=-1;
+ children.forEach((el,i)=>{if(el.id==='item-title'||contentKeys.has(el.dataset.stackElement))lastContent=i});
+ const trailing=children.slice(lastContent+1).filter(el=>el.matches('.item-property-row'));
+ if(trailing.length){
+  const section=document.createElement('section');section.className='media-metadata-section';section.setAttribute('aria-label','Metadata');
+  const heading=document.createElement('h2');heading.textContent='Metadata';section.append(heading);
+  article.insertBefore(section,trailing[0]);trailing.forEach(el=>section.append(el));
+ }
+ return root.innerHTML;
+};
 
 render();syncDrawer();
 </script></body></html>
