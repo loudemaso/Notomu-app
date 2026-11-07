@@ -36,6 +36,8 @@ dialog{padding:0;border:1px solid #dce4d2;border-radius:16px;background:#fdfef9;
 .feed-header-title{font:28px/1.2 var(--serif);letter-spacing:-.4px;margin:0;min-width:0;overflow-wrap:anywhere}.stream-header .feed-settings{margin-left:auto;flex-shrink:0}.stream-header{gap:16px;margin-bottom:24px}
 
 .feed-group{position:relative;padding-bottom:12px}.feed-group-header{position:sticky;top:var(--feed-header-height,82px);z-index:9;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 4px;margin:0 0 14px;background:var(--bg);border-bottom:1px solid var(--line);font:500 12px var(--sans);letter-spacing:.2px}.group-count{font-size:10px;font-weight:400;color:var(--muted)}.feed-group .stream-card:last-child{margin-bottom:0}.feed-groups{isolation:isolate}
+
+.bottom-dock.searching{width:580px;max-width:calc(100% - 32px);gap:12px;padding-left:20px;transition:width .22s ease}.dock-search-icon{display:flex;color:#c6d5c3}.bottom-dock input{flex:1;min-width:0;background:transparent;border:0;color:white;font-size:15px;padding:12px 0;box-shadow:none!important}.bottom-dock input::placeholder{color:#c3cbc2}.bottom-dock.searching button{flex-basis:42px;width:42px}.dock-search-results{position:fixed;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 78px);left:50%;transform:translateX(-50%);width:580px;max-width:calc(100% - 32px);max-height:min(560px,65dvh);overflow:auto;background:#fffffff5;backdrop-filter:blur(24px);border:1px solid var(--line);box-shadow:0 12px 60px #18251c25;border-radius:16px;z-index:25;padding:8px}.dock-search-results[hidden]{display:none}.dock-results-heading{display:flex;justify-content:space-between;padding:12px 14px;font-size:11px;color:var(--muted)}.dock-results-heading span{font-size:10px}.dock-result{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:14px;border-radius:9px}.dock-result:hover{background:var(--soft)}.dock-result>span{flex:1;min-width:0}.dock-result strong{display:block;font-size:12px;font-weight:500}.dock-result small{display:block;margin-top:5px;color:var(--muted);font-size:10px}.dock-result>.icon{color:var(--green);width:17px}.dock-result>.icon:last-child{width:13px}
 </style>
 </head>
 <body>
@@ -107,7 +109,7 @@ function home(){
  {type:'Message',icon:'mail',source:'Studio North · Email',time:'4 hours ago',title:'A few ideas for our next chapter',body:'We put together a small collection of references. Would love to hear which direction feels right to you.',action:'data-contact="1"',label:'Open conversation'},
  ...state.items.filter(i=>i.id>100).map(i=>({type:'Note',icon:'note',source:i.feed+' · Notomu',time:'Just captured',title:i.title,body:i.text,action:'data-item="'+i.id+'"',label:'Open note'}))
  ].filter(c=>!types.length||types.includes(c.type));
- return `<header class="stream-header between"><span class="stream-brand">Notomu</span><div class="row"><button class="btn" data-action="itemFilter">${icon('layers')}Filter${types.length?' · '+types.length:''}</button><button class="icon-btn" data-action="capture" aria-label="Capture an item">${icon('plus')}</button></div></header><div class="stream-intro"><h1>Your life, collected.</h1><p>${types.length?types.join(' · '):'A quiet place for everything that comes your way.'}</p></div>${cards.map(c=>`<article class="stream-card"><div class="stream-meta"><span class="type-icon">${icon(c.icon)}</span><span>${esc(c.source)}<br><span style="font-size:9px;color:#98a18f">${c.type}</span></span><time>${c.time}</time></div>${c.art?'<div class="stream-art" aria-hidden="true"></div>':''}<h2>${esc(c.title)}</h2><p>${esc(c.body)}</p><div class="stream-actions">${c.task?`<button data-task="${c.task}">${icon(state.tasks[0].done?'check':'plus')}${state.tasks[0].done?'Completed':'Mark complete'}</button>`:`<button ${c.action}>${c.label} ${icon('arrow')}</button>`}${labelControl(c.title)}</div></article>`).join('')}<div class="stream-end">You’re all caught up. A little space for life.<br><span style="display:block;margin-top:8px;font-size:9px">Interactive concept · sample items</span></div>`;
+ return `<header class="stream-header between"><span class="stream-brand">Notomu</span><div class="row"><button class="btn" data-action="itemFilter">${icon('layers')}Filter${types.length?' · '+types.length:''}</button><button class="icon-btn" data-action="capture" aria-label="Capture an item">${icon('plus')}</button></div></header><div class="stream-intro"><h1>Your life, collected.</h1><p>${types.length?types.join(' · '):'A quiet place for everything that comes your way.'}</p></div>${cards.map(c=>`<article class="stream-card"><div class="stream-meta"><span class="type-icon">${icon(c.icon)}</span><span>${esc(c.source)}<br><span style="font-size:9px;color:#98a18f">${c.type}</span></span><time>${c.time}</time></div>${c.art?'<div class="stream-art" aria-hidden="true"></div>':''}<h2>${esc(c.title)}</h2><p>${esc(c.body)}</p><div class="stream-actions">${c.task?`<button data-task="${c.task}">${icon(state.tasks.find(t=>t.id===c.task)?.done?'check':'plus')}${state.tasks.find(t=>t.id===c.task)?.done?'Completed':'Mark complete'}</button>`:`<button ${c.action}>${c.label} ${icon('arrow')}</button>`}${labelControl(c.title)}</div></article>`).join('')}<div class="stream-end">You’re all caught up. A little space for life.<br><span style="display:block;margin-top:8px;font-size:9px">Interactive concept · sample items</span></div>`;
 }
 const originalGo=go;
 go=function(page){originalGo(page);if(page!=='today')document.getElementById('main').insertAdjacentHTML('afterbegin','<button class="text-btn" data-page="today" style="margin:24px 0">← Back to feed</button>')};
@@ -146,12 +148,12 @@ let feeds=defaults,activeFeed='all',draft;
 try{const saved=JSON.parse(localStorage.getItem(feedStore));if(Array.isArray(saved)&&saved.length&&saved.every(f=>f.id&&f.name&&Array.isArray(f.rules)&&Array.isArray(f.sorts)&&Array.isArray(f.sources)))feeds=saved}catch{}
 const persistFeeds=()=>{try{localStorage.setItem(feedStore,JSON.stringify(feeds))}catch{toast('Changes kept for this session.')}};
 const feedNow=new Date();
-function feedItems(){return rawFeedItems().map((c,n)=>({...c,id:n,created:new Date(feedNow.getTime()-n*3600000).toISOString().slice(0,10),priority:n===0?'High':'Normal',status:c.type==='Event'?'Idea':c.type==='Task'?(state.tasks[0].done?'Done':'Open'):'Open'}))}
+function feedItems(){return rawFeedItems().map((c,n)=>({...c,id:n,created:new Date(feedNow.getTime()-n*3600000).toISOString().slice(0,10),priority:n===0?'High':'Normal',status:c.type==='Event'?'Idea':c.type==='Task'?(state.tasks.find(t=>t.id===c.task)?.done?'Done':'Open'):'Open'}))}
 function matches(c,r){const v=String(c[r.field]??'').toLowerCase(),q=r.value.toLowerCase();return r.op==='is'?v===q:r.op==='not'?v!==q:r.op==='contains'?v.includes(q):r.op==='after'?v>=q:v<=q}
 function selectedItems(f){let a=feedItems().filter(c=>(!f.sources.length||f.sources.some(s=>c.source.includes(s)))&&(!f.rules.length||(f.match==='any'?f.rules.some(r=>matches(c,r)):f.rules.every(r=>matches(c,r)))));return a.sort((a,b)=>{for(const s of f.sorts){let v=String(a[s.field]??'').localeCompare(String(b[s.field]??''));if(v)return s.dir==='desc'?-v:v}return a.id-b.id})}
 function selectFeed(id){activeFeed=id;go('today')}
 nav=function(){const f=feeds.find(f=>f.id===activeFeed)||feeds[0];activeFeed=f.id;$('#sidebar').innerHTML=`<div class="brand">Notomu</div><div class="between sidebar-section"><span class="eyebrow">Your feeds</span><button class="icon-btn" data-feed-new aria-label="Create feed">${icon('plus')}</button></div><nav class="nav" aria-label="All feeds">${feeds.map(x=>`<button data-open-feed="${esc(x.id)}" class="${state.page==='today'&&x.id===activeFeed?'active':''}">${feedPageIcon()}<span>${esc(x.name)}</span></button>`).join('')}</nav><button class="feed-link" data-feed-new>${icon('plus')}New feed</button><div class="sidebar-footer"><button class="feed-link" data-action="search">${icon('search')}Search everything</button><button class="capture-btn" data-action="capture">${icon('plus')}Capture an item</button><p class="notice" style="padding:12px">Your items. Your perspectives.<br>Interactive concept · sample data</p></div>`;$('#bottom-dock').innerHTML=feeds.filter(f=>f.pinned).map(f=>`<button data-open-feed="${esc(f.id)}" class="${state.page==='today'&&f.id===activeFeed?'active':''}" aria-label="${esc(f.name)}" title="${esc(f.name)}">${icon(f.icon)}<span>${esc(f.name)}</span></button>`).join('')+`<button data-action="capture" class="dock-create" aria-label="Capture an item">${icon('plus')}</button><button data-manage-dock aria-label="Customize floating bar">${icon('settings')}</button>`};
-home=function(){const f=feeds.find(f=>f.id===activeFeed),cards=selectedItems(f);return `<header class="stream-header between"><button class="icon-btn feeds-mobile" data-action="menu" aria-label="Open feeds">${icon('menu')}</button><h1 class="feed-header-title">${esc(f.name)}</h1><button class="icon-btn feed-settings" data-feed-edit aria-label="Feed settings" title="Feed settings">${icon('settings')}</button></header>${cards.map(c=>`<article class="stream-card"><div class="stream-meta"><span class="type-icon">${icon(c.icon)}</span><span>${esc(c.source)}<br><span class="small">${c.type}</span></span><time>${c.time}</time></div>${c.art?'<div class="stream-art" aria-hidden="true"></div>':''}<h2>${esc(c.title)}</h2><p>${esc(c.body)}</p><div class="stream-actions">${c.task?`<button data-task="${c.task}">${icon('check')}${state.tasks[0].done?'Completed':'Mark complete'}</button>`:`<button ${c.action}>${c.label}${icon('arrow')}</button>`}${labelControl(c.title)}</div></article>`).join('')||'<div class="empty-state"><h3>A little room for more.</h3>No sample items match this feed yet.<br><button class="text-btn" data-feed-edit>Edit feed definition</button></div>'}<div class="stream-end">${cards.length?'You’re all caught up.':''}</div>`};
+home=function(){const f=feeds.find(f=>f.id===activeFeed),cards=selectedItems(f);return `<header class="stream-header between"><button class="icon-btn feeds-mobile" data-action="menu" aria-label="Open feeds">${icon('menu')}</button><h1 class="feed-header-title">${esc(f.name)}</h1><button class="icon-btn feed-settings" data-feed-edit aria-label="Feed settings" title="Feed settings">${icon('settings')}</button></header>${cards.map(c=>`<article class="stream-card"><div class="stream-meta"><span class="type-icon">${icon(c.icon)}</span><span>${esc(c.source)}<br><span class="small">${c.type}</span></span><time>${c.time}</time></div>${c.art?'<div class="stream-art" aria-hidden="true"></div>':''}<h2>${esc(c.title)}</h2><p>${esc(c.body)}</p><div class="stream-actions">${c.task?`<button data-task="${c.task}">${icon('check')}${state.tasks.find(t=>t.id===c.task)?.done?'Completed':'Mark complete'}</button>`:`<button ${c.action}>${c.label}${icon('arrow')}</button>`}${labelControl(c.title)}</div></article>`).join('')||'<div class="empty-state"><h3>A little room for more.</h3>No sample items match this feed yet.<br><button class="text-btn" data-feed-edit>Edit feed definition</button></div>'}<div class="stream-end">${cards.length?'You’re all caught up.':''}</div>`};
 const fields=[['type','Item type'],['created','Created date'],['priority','Priority · custom'],['status','Status · custom'],['title','Title'],['source','Source']];
 const opts=(list,value)=>list.map(([v,l])=>`<option value="${v}" ${v===value?'selected':''}>${l}</option>`).join('');
 function editFeed(id){draft=JSON.parse(JSON.stringify(feeds.find(f=>f.id===id)||{id:'feed-'+Date.now(),name:'',icon:'layers',pinned:false,rules:[],sorts:[],sources:[],match:'all'}));drawEditor()}
@@ -260,6 +262,68 @@ render=function(){
  const update=()=>main.style.setProperty('--feed-header-height',header.getBoundingClientRect().height+'px');
  update();feedHeaderObserver=new ResizeObserver(update);feedHeaderObserver.observe(header);
 };
+
+const sampleSets={
+ Message:[
+ ['The playlist for the drive','Maya · SMS','Here’s that playlist I mentioned. Track four feels like a windows-down kind of song.'],
+ ['Dinner on Thursday?','Eli · SMS','I found a tiny neighborhood spot with a lovely patio. Want to try it this week?'],
+ ['Your monthly studio update','Fieldwork · Email','A few new workshops, a little inspiration, and an invitation to make something.']],
+ Article:[
+ ['A smaller, slower internet','Your reading list','On choosing a handful of meaningful places online instead of trying to keep up with everything.'],
+ ['Designing a day with breathing room','Your reading list','A practical look at leaving space between commitments and making attention your starting point.'],
+ ['Why we make things','Your reading list','What working with our hands can teach us about patience, presence, and playful experimentation.'],
+ ['The city at walking speed','Your reading list','Look closer at the familiar streets around you: little gardens, old signs, and unexpected places to pause.']],
+ Note:[
+ ['A few ideas for Sunday','Personal · Notomu','Farmers market. A long walk. Something simmering on the stove. Keep the evening open.'],
+ ['A room for making things','Creative life · Notomu','A big table, a good lamp, a shelf for half-finished experiments. A space that invites a beginning.'],
+ ['Questions worth keeping','Personal · Notomu','What gave me energy this week? What am I curious about? What can I make a little simpler?'],
+ ['A tiny photo project','Creative life · Notomu','Photograph the same street corner every morning for a week. Notice how the light changes.']],
+ Event:[
+ ['An evening of live jazz','Community calendar','Friday · 7:00 PM. A small room, a local trio, and nowhere else to be.'],
+ ['Saturday morning market','Community calendar','Saturday · 9:00 AM. Fresh bread, seasonal produce, and a walk through the stalls.'],
+ ['A neighborhood photo walk','Community calendar','Sunday · 10:00 AM. Bring a camera or just your phone. Follow the light together.'],
+ ['Bookshop after hours','Community calendar','Wednesday · 6:30 PM. A relaxed reading night with tea and a table full of recommendations.']],
+ Task:[
+ ['Send a thank-you note','Personal','A few thoughtful lines to someone who made this week a little better.'],
+ ['Choose photos for the little book','Creative life','Pick ten favorites. Start with the ones that bring you back to a particular moment.'],
+ ['Plan one screen-free evening','Personal','Choose a night, put the phone away, and leave something interesting within reach.'],
+ ['Refresh the inspiration board','Creative life','Clear what no longer feels useful and add three things that spark a new direction.']]
+};
+const demoCards=[];
+let sampleId=700;
+Object.entries(sampleSets).forEach(([type,rows])=>rows.forEach(([title,source,body],n)=>{
+ const id=sampleId++;
+ const card={id,type,title,source,body,time:(n+1)+' days ago',icon:{Message:'message',Article:'book',Note:'note',Event:'calendar',Task:'check'}[type],action:'data-demo-item="'+id+'"',label:type==='Event'?'Explore event':type==='Article'?'Read article':type==='Message'?'Open message':'Open note'};
+ if(type==='Task'){card.task=id;state.tasks.push({id,title,project:source,time:n<2?'Today':'Next week',done:false})}
+ demoCards.push(card);
+}));
+const originalRawItems=rawFeedItems;
+rawFeedItems=function(){return [...originalRawItems(),...demoCards]};
+try{if(!localStorage.getItem('notomu-grouped-everything-v1')){const all=feeds.find(f=>f.id==='all');if(all){all.groupBy='type';all.groupOrder='asc';persistFeeds()}localStorage.setItem('notomu-grouped-everything-v1','1')}}catch{const all=feeds.find(f=>f.id==='all');if(all)all.groupBy='type'}
+function openDemo(id){const c=demoCards.find(c=>c.id===Number(id));if(!c)return;modal(c.type,'<span class="pill">'+esc(c.source)+'</span><h3 class="detail-title">'+esc(c.title)+'</h3><div class="detail-content">'+esc(c.body)+'</div><div class="dialog-footer">'+labelControl(c.title)+'</div>')}
+let dockSearchOpen=false;
+const dockSearchRoot=document.createElement('section');dockSearchRoot.id='dock-search-results';dockSearchRoot.className='dock-search-results';dockSearchRoot.setAttribute('aria-label','Search results');dockSearchRoot.hidden=true;document.body.appendChild(dockSearchRoot);
+const beforeSearchNav=nav;
+nav=function(){beforeSearchNav();const dock=$('#bottom-dock');dock.classList.toggle('searching',dockSearchOpen);
+ if(dockSearchOpen)dock.innerHTML='<div class="dock-search-icon">'+icon('search')+'</div><input id="dock-search-input" aria-label="Search items" placeholder="Search your items…" autocomplete="off" aria-controls="dock-search-results"><button data-close-dock-search aria-label="Close search">'+icon('close')+'</button>';
+ else dock.querySelector('[data-action="search"]')?.setAttribute('data-dock-search','');
+};
+function dockResults(q){
+ const query=q.trim().toLowerCase();const all=feedItems();const found=(query?all.filter(c=>(c.title+' '+c.body+' '+c.type+' '+c.source+' '+(itemLabels[c.title]||[]).join(' ')).toLowerCase().includes(query)):all).slice(0,8);
+ dockSearchRoot.hidden=false;dockSearchRoot.innerHTML='<div class="dock-results-heading">'+(query?'Results':'Explore your items')+'<span>'+found.length+(found.length===8?' shown':'')+'</span></div>'+found.map(c=>'<button class="dock-result" '+(c.task?'data-search-task="'+c.task+'"':c.action)+'>'+icon(c.icon)+'<span><strong>'+esc(c.title)+'</strong><small>'+esc(c.type)+' · '+esc(c.source)+'</small></span>'+icon('arrow')+'</button>').join('')+(found.length?'':'<div class="empty-state">No matches. Try a title, label, or item type.</div>');
+}
+function closeDockSearch(){dockSearchOpen=false;dockSearchRoot.hidden=true;nav()}
+const fullSearch=showSearch;
+showSearch=function(){if(document.body.classList.contains('experience-mode')){fullSearch();return}dockSearchOpen=true;nav();dockResults('');$('#dock-search-input').focus()};
+document.addEventListener('input',e=>{if(e.target.id==='dock-search-input')dockResults(e.target.value)});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.demoItem)openDemo(b.dataset.demoItem);
+ if('closeDockSearch'in b.dataset)closeDockSearch();
+ if(b.dataset.searchTask){closeDockSearch();go('tasks')}
+ else if(b.closest('#dock-search-results'))closeDockSearch();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dockSearchOpen)closeDockSearch()});
 render();syncDrawer();
 
 </script></body></html>
