@@ -196,7 +196,7 @@ const defaults=[
  {id:'messages',name:'Messages',icon:'message',pinned:true,rules:[{field:'type',op:'is',value:'Message'}],sorts:[],sources:[]},
  {id:'events',name:'Events',icon:'calendar',pinned:true,rules:[{field:'type',op:'is',value:'Event'}],sorts:[],sources:[]},
  {id:'reading',name:'Worth reading',icon:'book',pinned:true,rules:[{field:'type',op:'is',value:'Article'}],sorts:[],sources:[]},
- {id:'notes',name:'Notes & thoughts',icon:'note',pinned:false,rules:[{field:'type',op:'is',value:'Note'}],sorts:[],sources:[]}
+ {id:'notes',name:'Notes',icon:'note',pinned:false,rules:[{field:'type',op:'is',value:'Note'}],sorts:[],sources:[]}
 ];
 let feeds=defaults,activeFeed='all',draft;
 try{const saved=JSON.parse(localStorage.getItem(feedStore));if(Array.isArray(saved)&&saved.length&&saved.every(f=>f.id&&f.name&&Array.isArray(f.rules)&&Array.isArray(f.sorts)&&Array.isArray(f.sources)))feeds=saved}catch{}
@@ -618,6 +618,9 @@ feedItems=function(){return feedItemsBeforeFileIcons().map(c=>c.type==='File'?{.
 const renderBeforeFileIcons=render;
 render=function(){models.forEach(c=>{if(c.type==='File')c.icon=fileIconFor(c)});if(newDraft?.type==='File')newDraft.icon=fileIconFor(newDraft);renderBeforeFileIcons()};
 document.addEventListener('change',e=>{if(state.page==='item'&&currentItem()?.type==='File'&&['fileFormat','fileName'].includes(e.target.dataset.schemaProperty)){currentItem().icon=fileIconFor(currentItem());saveModels();render()}});
+
+feeds.forEach(f=>{if(f.name==='Notes & thoughts')f.name='Notes'});persistFeeds();
+homeBlocks.forEach(b=>{if(b.title==='Notes & thoughts')b.title='Notes'});saveHomeBlocks();
 render();syncDrawer();
 
 </script></body></html>
