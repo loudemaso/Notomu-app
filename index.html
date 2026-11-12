@@ -237,7 +237,7 @@ body.item-properties-mode #bottom-dock{display:none!important}
 }
 @media(prefers-reduced-motion:reduce){.item-properties-menu{scroll-behavior:auto}}
 
-</style>
+.item-properties-menu{overflow-x:hidden}.menu-property-surface .property-token-list input{min-width:0;flex-basis:100%}.menu-property-surface .property-token-list .inline-label{max-width:100%;overflow-wrap:anywhere}</style>
 </head>
 <body>
 <div class="mobile-shade" id="shade" data-action="menu"></div>
@@ -1362,7 +1362,7 @@ function propertySurfaceElement(type,p,node,surface){
   button.dataset.movePropertySurface=p.key;button.dataset.propertySurfaceTo=surface==='menu'?'page':'menu';
   const destination=surface==='menu'?'main page':'Item Properties Menu';
   button.setAttribute('aria-label','Move '+p.name+' to '+destination);button.title='Move '+p.name+' to '+destination;
-  button.innerHTML=icon(surface==='menu'?'arrow':'panelRight');shell.append(button);
+  button.innerHTML=icon(surface==='menu'?'chevronLeft':'panelRight');shell.append(button);
  }
  return shell;
 }
